@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FleetOS — Vehicle Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sidebar:#12161c; --sidebar-2:#1b212a;
+    --bg:#f4f6f8; --card:#ffffff; --border:#e4e8ed;
+    --text:#131722; --muted:#6b7684;
+    --teal:#0ea5a0; --teal-light:#e3f7f6;
+    --amber:#f0a020; --amber-light:#fdf1de;
+    --red:#e0524a; --red-light:#fbe9e8;
+    --green:#1c9a6c;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:14.5px;}
+  code,.mono{font-family:'JetBrains Mono',monospace;}
+  button,input,select{font-family:inherit;}
+  .app{display:flex; min-height:100vh;}
+
+  .sidebar{width:222px; flex:0 0 222px; background:var(--sidebar); color:#c6ccd6; display:flex; flex-direction:column; padding:20px 14px; position:sticky; top:0; height:100vh;}
+  .brand{display:flex; align-items:center; gap:9px; padding:6px 10px 22px; color:#fff; font-weight:700; font-size:16.5px;}
+  .brand svg{width:22px; height:22px; stroke:var(--teal); fill:none; stroke-width:1.8;}
+  .navgroup-label{font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:#5b6473; padding:14px 12px 6px;}
+  .navlink{display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; color:#aab2c0; font-size:13.8px; font-weight:500; border:none; background:none; width:100%; text-align:left;}
+  .navlink svg{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.8;}
+  .navlink:hover{background:var(--sidebar-2); color:#fff;}
+  .navlink.active{background:var(--sidebar-2); color:#fff; box-shadow:inset 2.5px 0 0 var(--teal);}
+  .sidebar-foot{margin-top:auto; padding:12px; font-size:11.5px; color:#5b6473; border-top:1px solid #262d38;}
+  .sidebar-foot b{color:#aab2c0;}
+  .sidebar-foot a{color:var(--teal); text-decoration:none;}
+
+  main{flex:1; min-width:0;}
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:18px 28px; background:var(--card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10;}
+  .topbar h1{font-size:19px; margin:0;} .topbar p{margin:2px 0 0; color:var(--muted); font-size:13px;}
+  .btn{background:var(--teal); color:#fff; border:none; font-weight:600; padding:9px 16px; border-radius:8px; font-size:13.5px; display:inline-flex; align-items:center; gap:7px;}
+  .btn.ghost{background:none; border:1px solid var(--border); color:var(--text);}
+  .view{padding:26px 28px 60px; display:none;} .view.active{display:block;}
+
+  .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:26px;}
+  @media (max-width:900px){.stat-grid{grid-template-columns:repeat(2,1fr);}}
+  .stat-card{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 18px;}
+  .stat-card .label{font-size:12px; color:var(--muted); margin-bottom:6px;}
+  .stat-card .value{font-size:26px; font-weight:700;}
+  .dashboard-grid{display:grid; grid-template-columns:1.3fr 1fr; gap:20px;}
+  @media (max-width:1000px){.dashboard-grid{grid-template-columns:1fr;}}
+
+  .card{background:var(--card); border:1px solid var(--border); border-radius:12px;}
+  .card-head{display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border);}
+  .card-head h3{margin:0; font-size:15px;}
+  .card-body{padding:16px 18px;}
+
+  table{width:100%; border-collapse:collapse;}
+  th,td{text-align:left; padding:10px 8px; border-bottom:1px solid var(--border); font-size:13.5px;}
+  th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase;}
+  tr:last-child td{border-bottom:none;}
+  .type-badge{font-size:11px; padding:3px 9px; border-radius:999px; font-weight:600;}
+  .type-badge.Car{background:#e7f0fe; color:#2456c9;}
+  .type-badge.Truck{background:var(--amber-light); color:#a5660b;}
+  .type-badge.ElectricCar{background:var(--teal-light); color:#0a7a76;}
+  .status-pill{font-size:12.5px; font-weight:600;}
+  .status-pill.running{color:var(--green);} .status-pill.idle{color:var(--muted);}
+  .fuel-bar{width:70px; height:6px; background:#eceff2; border-radius:4px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:6px;}
+  .fuel-fill{height:100%; background:var(--teal);}
+  .row-actions{display:flex; gap:6px;}
+  .icon-btn{border:1px solid var(--border); background:#fff; border-radius:6px; padding:5px 8px; font-size:12px; color:var(--muted);}
+  .icon-btn:hover{color:var(--text); border-color:#cfd5dc;}
+  .icon-btn.start{color:var(--green); border-color:#bfe6d2;}
+  .icon-btn.stop{color:var(--red); border-color:#f2c9c6;}
+
+  .overlay{position:fixed; inset:0; background:rgba(15,18,24,0.45); display:none; align-items:center; justify-content:center; z-index:100; padding:20px;}
+  .overlay.active{display:flex;}
+  .modal{background:#fff; border-radius:14px; width:100%; max-width:440px; padding:22px; box-shadow:0 20px 50px rgba(0,0,0,0.25);}
+  .modal h3{margin:0 0 4px;} .modal p.sub{color:var(--muted); font-size:13px; margin:0 0 16px;}
+  .form-row{margin-bottom:12px;} .form-row label{display:block; font-size:12.5px; color:var(--muted); margin-bottom:5px;}
+  .form-row input,.form-row select{width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:7px; font-size:13.5px;}
+  .form-row-2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .modal-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
+  .error-text{color:var(--red); font-size:12.5px; margin-top:8px; display:none;}
+
+  .log{background:#0d1015; border-radius:10px; padding:12px 14px; height:260px; overflow-y:auto; font-family:'JetBrains Mono',monospace; font-size:12.3px; color:#8fd6c4;}
+  .log div{padding:2px 0;} .log .warn{color:var(--amber);} .log .sys{color:#7c8797;}
+
+  .api-card{padding:18px;}
+  .api-card code{background:#f0f2f4; padding:2px 6px; border-radius:5px;}
+  .endpoint-list{list-style:none; margin:10px 0 0; padding:0;}
+  .endpoint-list li{display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;}
+  .endpoint-list li:last-child{border-bottom:none;}
+  .method{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:11.5px; padding:2px 7px; border-radius:5px; width:56px; text-align:center; flex:0 0 auto;}
+  .method.get{background:#e7f0fe; color:#2456c9;}
+  .method.post{background:var(--teal-light); color:#0a7a76;}
+  .method.patch{background:var(--amber-light); color:#a5660b;}
+  .method.delete{background:var(--red-light); color:#a8302a;}
+
+  @media (max-width:760px){
+    .app{flex-direction:column;} .sidebar{width:100%; flex:none; height:auto; flex-direction:row; overflow-x:auto;}
+    .brand{padding:6px 10px;} .navgroup-label{display:none;} .sidebar-foot{display:none;} .navlink{white-space:nowrap;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24"><path d="M3 13l2-5a2 2 0 012-1.5h10A2 2 0 0119 8l2 5"/><rect x="2" y="13" width="20" height="6" rx="1.5"/><circle cx="7" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/></svg>
+      FleetOS
+    </div>
+    <div class="navgroup-label">Operations</div>
+    <button class="navlink active" data-view="dashboard"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg> Dashboard</button>
+    <button class="navlink" data-view="fleet"><svg viewBox="0 0 24 24"><path d="M3 13l2-5a2 2 0 012-1.5h10A2 2 0 0119 8l2 5"/><rect x="2" y="13" width="20" height="6" rx="1.5"/><circle cx="7" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/></svg> Fleet</button>
+    <div class="navgroup-label">System</div>
+    <button class="navlink" data-view="api"><svg viewBox="0 0 24 24"><path d="M8 4L2 12l6 8M16 4l6 8-6 8"/></svg> API &amp; Swagger</button>
+    <div class="sidebar-foot">Backend: Spring Boot + JPA<br>Built for <b>Sadhvika</b><br><a href="/swagger-ui.html" target="_blank">Open Swagger UI →</a></div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div><h1 id="pageTitle">Dashboard</h1><p id="pageSub">Live overview of the fleet</p></div>
+      <button class="btn" id="openAddBtn">+ Add Vehicle</button>
+    </div>
+
+    <section class="view active" id="view-dashboard">
+      <div class="stat-grid">
+        <div class="stat-card"><div class="label">Total vehicles</div><div class="value" id="statTotal">0</div></div>
+        <div class="stat-card"><div class="label">Running now</div><div class="value" id="statRunning">0</div></div>
+        <div class="stat-card"><div class="label">Avg. fuel level</div><div class="value" id="statFuel">0</div></div>
+        <div class="stat-card"><div class="label">API status</div><div class="value" id="statApi" style="font-size:16px; color:var(--green);">●&nbsp;Live</div></div>
+      </div>
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-head"><h3>Fleet snapshot</h3></div>
+          <div class="card-body" style="padding-top:4px;">
+            <table><thead><tr><th>Reg</th><th>Model</th><th>Type</th><th>Status</th></tr></thead><tbody id="snapshotBody"></tbody></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Activity log</h3></div>
+          <div class="card-body"><div class="log" id="logBox"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-fleet">
+      <div class="card">
+        <div class="card-head"><h3>All vehicles</h3></div>
+        <div class="card-body" style="padding-top:4px;">
+          <table><thead><tr><th>Reg</th><th>Model</th><th>Type</th><th>Fuel</th><th>Status</th><th></th></tr></thead><tbody id="fleetBody"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-api">
+      <div class="card api-card">
+        <h3 style="margin-top:0;">Backend API</h3>
+        <p style="color:var(--muted); font-size:13.5px;">This page is a plain frontend calling the real REST API below — nothing here is simulated. Full interactive docs, generated straight from the Spring controllers, live in Swagger:</p>
+        <p><a class="btn" href="/swagger-ui.html" target="_blank">Open Swagger UI</a> &nbsp; <a class="btn ghost" href="/v3/api-docs" target="_blank">Raw OpenAPI JSON</a></p>
+        <ul class="endpoint-list">
+          <li><span class="method get">GET</span> <code>/api/vehicles</code> — list the fleet</li>
+          <li><span class="method get">GET</span> <code>/api/vehicles/stats</code> — fleet totals</li>
+          <li><span class="method post">POST</span> <code>/api/vehicles/car</code> — add a Car</li>
+          <li><span class="method post">POST</span> <code>/api/vehicles/truck</code> — add a Truck</li>
+          <li><span class="method post">POST</span> <code>/api/vehicles/electric-car</code> — add an ElectricCar</li>
+          <li><span class="method post">POST</span> <code>/api/vehicles/{id}/start</code> — polymorphic start()</li>
+          <li><span class="method post">POST</span> <code>/api/vehicles/{id}/stop</code> — power off</li>
+          <li><span class="method patch">PATCH</span> <code>/api/vehicles/{id}/fuel</code> — update fuel level</li>
+          <li><span class="method post">POST</span> <code>/api/vehicles/{id}/charge</code> — Chargeable interface only</li>
+          <li><span class="method delete">DELETE</span> <code>/api/vehicles/{id}</code> — remove a vehicle</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3>Add a vehicle</h3>
+    <p class="sub">Sends a real request to the Spring Boot API, which constructs the matching Java object.</p>
+    <div class="form-row">
+      <label>Vehicle type</label>
+      <select id="vType"><option value="car">Car</option><option value="truck">Truck</option><option value="electric-car">ElectricCar</option></select>
+    </div>
+    <div class="form-row-2">
+      <div class="form-row"><label>Registration number</label><input id="vReg" placeholder="TS09AB1234"></div>
+      <div class="form-row"><label>Model</label><input id="vModel" placeholder="Model name"></div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-row"><label id="fuelLabel">Fuel level (L)</label><input id="vFuel" type="number" placeholder="e.g. 40"></div>
+      <div class="form-row" id="cargoRow"><label>Cargo capacity (tons)</label><input id="vCargo" type="number" placeholder="e.g. 9"></div>
+    </div>
+    <p class="error-text" id="modalError"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelAddBtn">Cancel</button>
+      <button class="btn" id="confirmAddBtn">Add to Fleet</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api/vehicles';
+
+document.querySelectorAll('.navlink').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.navlink').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+    const titles = {dashboard:['Dashboard','Live overview of the fleet'], fleet:['Fleet','Every vehicle currently under management'], api:['API & Swagger','Explore and test the backend directly']};
+    document.getElementById('pageTitle').textContent = titles[btn.dataset.view][0];
+    document.getElementById('pageSub').textContent = titles[btn.dataset.view][1];
+    document.getElementById('openAddBtn').style.display = btn.dataset.view==='api' ? 'none':'inline-flex';
+  });
+});
+
+const overlay = document.getElementById('overlay');
+document.getElementById('openAddBtn').addEventListener('click', ()=>{ overlay.classList.add('active'); toggleFields(); });
+document.getElementById('cancelAddBtn').addEventListener('click', ()=> overlay.classList.remove('active'));
+document.getElementById('vType').addEventListener('change', toggleFields);
+function toggleFields(){
+  const type = document.getElementById('vType').value;
+  document.getElementById('cargoRow').style.display = type==='truck' ? 'block':'none';
+  document.getElementById('fuelLabel').textContent = type==='electric-car' ? 'Battery %' : 'Fuel level (L)';
+}
+
+function log(msg, cls){
+  const box = document.getElementById('logBox');
+  const line = document.createElement('div');
+  if(cls) line.className = cls;
+  line.textContent = msg;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function api(path, options){
+  const res = await fetch(API + path, options);
+  if(!res.ok){
+    const err = await res.json().catch(()=>({message:res.statusText}));
+    throw new Error(err.message || 'Request failed');
+  }
+  if(res.status === 204) return null;
+  return res.json();
+}
+
+function fuelBar(v){
+  const max = v.vehicleType==='Truck' ? 120 : 100;
+  const pct = Math.min(100, (v.fuelLevel/max)*100);
+  return `<span class="fuel-bar"><span class="fuel-fill" style="width:${pct}%"></span></span>${v.fuelLevel.toFixed(1)}${v.vehicleType==='ElectricCar' ? '%':'L'}`;
+}
+function statusPill(v){
+  return v.running ? `<span class="status-pill running">● Running</span>` : `<span class="status-pill idle">○ Idle</span>`;
+}
+
+async function refreshFleet(){
+  let fleet = [];
+  try{
+    fleet = await api('');
+    document.getElementById('statApi').innerHTML = '●&nbsp;Live';
+    document.getElementById('statApi').style.color = 'var(--green)';
+  }catch(e){
+    document.getElementById('statApi').innerHTML = '●&nbsp;Offline';
+    document.getElementById('statApi').style.color = 'var(--red)';
+    log('! could not reach the API: ' + e.message, 'warn');
+    return;
+  }
+
+  const fleetBody = document.getElementById('fleetBody');
+  const snapshotBody = document.getElementById('snapshotBody');
+  fleetBody.innerHTML = fleet.length ? '' : `<tr><td colspan="6" style="color:var(--muted)">No vehicles yet.</td></tr>`;
+  snapshotBody.innerHTML = fleet.length ? '' : `<tr><td colspan="4" style="color:var(--muted)">Fleet is empty.</td></tr>`;
+
+  fleet.forEach(v=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${v.registrationNumber}</td>
+      <td>${v.model}</td>
+      <td><span class="type-badge ${v.vehicleType}">${v.vehicleType}</span></td>
+      <td>${fuelBar(v)}</td>
+      <td>${statusPill(v)}</td>
+      <td class="row-actions">
+        <button class="icon-btn ${v.running?'stop':'start'}" data-id="${v.id}" data-act="${v.running?'stop':'start'}">${v.running?'Stop':'Start'}</button>
+        <button class="icon-btn" data-id="${v.id}" data-act="del">Remove</button>
+      </td>`;
+    fleetBody.appendChild(tr);
+
+    const tr2 = document.createElement('tr');
+    tr2.innerHTML = `<td class="mono">${v.registrationNumber}</td><td>${v.model}</td><td><span class="type-badge ${v.vehicleType}">${v.vehicleType}</span></td><td>${statusPill(v)}</td>`;
+    snapshotBody.appendChild(tr2);
+  });
+
+  fleetBody.querySelectorAll('[data-act="start"]').forEach(btn=>btn.addEventListener('click', ()=>startVehicle(btn.dataset.id)));
+  fleetBody.querySelectorAll('[data-act="stop"]').forEach(btn=>btn.addEventListener('click', ()=>stopVehicle(btn.dataset.id)));
+  fleetBody.querySelectorAll('[data-act="del"]').forEach(btn=>btn.addEventListener('click', ()=>removeVehicle(btn.dataset.id)));
+
+  document.getElementById('statTotal').textContent = fleet.length;
+  document.getElementById('statRunning').textContent = fleet.filter(v=>v.running).length;
+  const avg = fleet.length ? (fleet.reduce((s,v)=>s+v.fuelLevel,0)/fleet.length) : 0;
+  document.getElementById('statFuel').textContent = avg.toFixed(1);
+}
+
+async function startVehicle(id){
+  try{ const res = await api(`/${id}/start`, {method:'POST'}); log('> ' + res.message); }
+  catch(e){ log('! ' + e.message, 'warn'); }
+  refreshFleet();
+}
+async function stopVehicle(id){
+  try{ const res = await api(`/${id}/stop`, {method:'POST'}); log('> ' + res.message); }
+  catch(e){ log('! ' + e.message, 'warn'); }
+  refreshFleet();
+}
+async function removeVehicle(id){
+  try{ await api(`/${id}`, {method:'DELETE'}); log('- vehicle removed from fleet', 'sys'); }
+  catch(e){ log('! ' + e.message, 'warn'); }
+  refreshFleet();
+}
+
+document.getElementById('confirmAddBtn').addEventListener('click', async ()=>{
+  const type = document.getElementById('vType').value;
+  const reg = document.getElementById('vReg').value.trim();
+  const model = document.getElementById('vModel').value.trim();
+  const fuel = Number(document.getElementById('vFuel').value || 0);
+  const cargo = Number(document.getElementById('vCargo').value || 0);
+  const errorEl = document.getElementById('modalError');
+  errorEl.style.display = 'none';
+
+  if(!reg || !model){
+    errorEl.textContent = 'Registration number and model are required.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  let body;
+  if(type==='car') body = {registrationNumber:reg, model, fuelLevel:fuel};
+  else if(type==='truck') body = {registrationNumber:reg, model, fuelLevel:fuel, cargoCapacityTons:cargo};
+  else body = {registrationNumber:reg, model, batteryPercent:fuel};
+
+  try{
+    const created = await api(`/${type}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    log(`+ added ${created.vehicleType} "${created.registrationNumber}"`, 'sys');
+    overlay.classList.remove('active');
+    ['vReg','vModel','vFuel','vCargo'].forEach(id=> document.getElementById(id).value='');
+    refreshFleet();
+  }catch(e){
+    errorEl.textContent = e.message;
+    errorEl.style.display = 'block';
+  }
+});
+
+log('sys: connecting to FleetOS API...', 'sys');
+refreshFleet();
+setInterval(refreshFleet, 8000);
+</script>
+</body>
+</html>
