@@ -7,7 +7,7 @@ built-in website and full Swagger (OpenAPI) documentation.
 
 All eight core OOP concepts are used for a real reason in the model layer
 (`src/main/java/com/fleetos/vms/model`), not as separate exercises:
-
+AXVS
 | Concept        | Where |
 |----------------|-------|
 | Class          | `Vehicle`, `Car`, `Truck`, `ElectricCar` |
